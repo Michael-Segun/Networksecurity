@@ -32,7 +32,7 @@ class DataValidation:
         
     def validate_number_of_columns(self, dataframe:pd.DataFrame)->bool:
         try:
-            number_of_columns=len(self._schema_config)
+            number_of_columns=len(self._schema_config["columns"])
             logging.info(f"Required number of columns:{number_of_columns}")
             logging.info(f"Dataframe as columns:{len(dataframe.columns)}")
             if len(dataframe.columns)==number_of_columns:
@@ -64,10 +64,13 @@ class DataValidation:
                 
             drift_report_file_path = self.data_validation_config.drift_report_file_path
             
+            
             #create directory
             dir_path = os.path.dirname(drift_report_file_path)
             os.makedirs(dir_path,exist_ok=True)
             write_yaml_file(file_path=drift_report_file_path,content=report)
+            
+            return status
         
         except Exception as e:
             raise NetworkSecurityException(e,sys)
@@ -89,6 +92,7 @@ class DataValidation:
             status=self.validate_number_of_columns(dataframe=train_dataframe)
             if not status:
                 error_message=f"Train dataframe does not contain all columns. \n"
+                status = self.validate_number_of_columns(dataframe=test_dataframe)
             if not status:
                 error_message=f"Test dataframe does not contain all columns. \n"
                 
