@@ -37,8 +37,10 @@ class ModelTrainer:
             raise NetworkSecurityException(e, sys)
         
         
-    def track_mlflow(self,best_model,classificationmetric):
+    def track_mlflow(self,best_model,classificationmetric,best_model_name=None):
         with mlflow.start_run():
+            if best_model_name:
+                mlflow.log_param("best_model_name",best_model_name)
             f1_score=classificationmetric.f1_score
             precision_score=classificationmetric.precision_score
             recall_score=classificationmetric.recall_score
@@ -99,22 +101,24 @@ class ModelTrainer:
         best_model = models[best_model_name]
         y_train_pred=best_model.predict(X_train)
         
+        logging.info(f"Best model found: {best_model_name} with score: {best_model_score}")
+        
         classification_train_metric=get_classification_score(y_true=y_train,y_pred=y_train_pred)
         
         ## Track the experiments with mlflow
-        self.track_mlflow(best_model,classification_train_metric)
+        self.track_mlflow(best_model,classification_train_metric,best_model_name)
         
         y_test_pred=best_model.predict(x_test)
         classification_test_metric=get_classification_score(y_true=y_test,y_pred=y_test_pred)
         
-        self.track_mlflow(best_model,classification_test_metric)
+        self.track_mlflow(best_model,classification_test_metric,best_model_name)
         preprocessor = load_object(file_path=self.data_transformation_artifact.transformed_object_file_path)
             
         model_dir_path = os.path.dirname(self.model_trainer_config.trained_model_file_path)
         os.makedirs(model_dir_path,exist_ok=True)
         
         Network_Model=NetworkModel(preprocessor=preprocessor,model=best_model)
-        save_object(self.model_trainer_config.trained_model_file_path,obj=NetworkModel)
+        save_object(self.model_trainer_config.trained_model_file_path,obj=Network_Model)
         
         save_object("final_model/model.pkl",best_model)
         
